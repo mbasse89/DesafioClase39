@@ -2,7 +2,7 @@ import express from 'express'
 import handlebars from 'express-handlebars'
 import mongoose from 'mongoose'
 import { Server } from 'socket.io'
-import { __dirname } from './utils.js';
+import  __dirname  from './utils.js';
 
 import productsRouter from './Router/products.router.js'
 import cartsRouter from './Router/carts.router.js'
@@ -16,31 +16,35 @@ import MongoStore from "connect-mongo"
 import initializePassport from './config/passport.config.js'
 import passport from "passport"
 import cookieParser from 'cookie-parser'
+ import { MONGO_URL, MONGO_DBNAME, PORT } from "./config/config.js"
 
 // Configuración de express
-const PORT = 8080
+// const PORT = 8080
 const app = express();
+
 
 app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 app.use("/static", express.static(__dirname + "/public"))
 
+// require('dotenv').config();
+
 
 mongoose.set("strictQuery", false)
 
-const mongoURL = 'mongodb+srv://matiasbasse:Luna2014@codercluster0.gatfryd.mongodb.net/';
-const mongoDBName = 'ecommerce';
+ 
+
 
 app.use(session({
-  store: MongoStore.create({
-    mongoUrl: mongoURL,
-    dbName: mongoDBName,
-  }),
-  secret: "secret",
-  resave: true,
-  saveUninitialized: true,
-}));
+    store: MongoStore.create({
+      mongoUrl: MONGO_URL,  
+      dbName: MONGO_DBNAME,
+    }),
+    secret: "secret",
+    resave: true,
+    saveUninitialized: true,
+  }))
 
 
 initializePassport()
@@ -66,30 +70,31 @@ app.use("/api/session", routerSession)
  
 
 // Conexión a MongoDB e inicio servidor
-mongoose.connect(mongoURL, {dbName: mongoDBName})
-    .then(() => {
-        console.log('DB conectada    ')
-        const httpServer = app.listen(PORT, () => console.log(`Listening 🏃...`))
+// Conexión a MongoDB e inicio del servidor
+mongoose.connect(process.env.MONGO_URL, { dbName: process.env.MONGO_DBNAME })
+  .then(() => {
+    console.log('DB conectada');
+    const httpServer = app.listen(process.env.PORT, () => console.log(`Listening 🏃...`));
 
-        // Configuración de socket.io
-        const io = new Server(httpServer)
-        app.set('socketio', io)
+    // Configuración de socket.io
+    const io = new Server(httpServer);
+    app.set('socketio', io);
 
-        io.on('connection', async socket => {
-            console.log('Conexión exitosa🤝')
-            socket.on('productList', data => {
-                io.emit('updatedProducts', data)
-            })
+    io.on('connection', async socket => {
+      console.log('Conexión exitosa🤝');
+      socket.on('productList', data => {
+        io.emit('updatedProducts', data);
+      });
 
-            let messages = (await messageModel.find()) ? await messageModel.find() : []
+      let messages = (await messageModel.find()) ? await messageModel.find() : [];
 
-            socket.broadcast.emit('alerta')
-            socket.emit('logs', messages)
-            socket.on('message', data => {
-                messages.push(data)
-                messageModel.create(messages)
-                io.emit('logs', messages)
-            })
-        })
-    })
-    .catch(e => console.error('Error al conectar'))
+      socket.broadcast.emit('alerta');
+      socket.emit('logs', messages);
+      socket.on('message', data => {
+        messages.push(data);
+        messageModel.create(messages);
+        io.emit('logs', messages);
+      });
+    });
+  })
+  .catch(e => console.error('Error al conectar:', e));
