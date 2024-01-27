@@ -1,13 +1,10 @@
 import passport from "passport"
 import local from "passport-local"
 import GithubStrategy from "passport-github2"
-import UserModel from "../DAO/models/user.models.js"
+import UserModel from "../DAO/mongo/models/user.models.js"
  import passportJWT from "passport-jwt"
 import { isValidPassword, createHash, jwtSign, generateToken } from "../utils.js"
-import CartModel from "../DAO/models/carts.model.js"
-
-
-
+import CartModel from "../DAO/mongo/models/carts.model.js"
 
 const LocalStrategy = local.Strategy
 const JWTStrategy = passportJWT.Strategy

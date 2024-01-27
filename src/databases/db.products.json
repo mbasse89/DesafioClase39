@@ -1,0 +1,32 @@
+[
+    {
+        "title": "Electric Guitar",
+        "category": "guitars",
+        "description": "High-quality electric guitar",
+        "price": 699.99,
+        "code": "gtr001",
+        "stock": 5,
+        "status": true,
+        "id": 1
+    },
+    {
+        "title": "Acoustic Guitar",
+        "category": "guitars",
+        "description": "Beautiful acoustic guitar",
+        "price": 499.99,
+        "code": "gtr002",
+        "stock": 3,
+        "status": true,
+        "id": 2
+    },
+    {
+        "title": "Bass Guitar",
+        "category": "guitars",
+        "description": "Powerful bass guitar",
+        "price": 799.99,
+        "code": "gtr003",
+        "stock": 7,
+        "status": true,
+        "id": 3
+    }
+]

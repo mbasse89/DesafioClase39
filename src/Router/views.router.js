@@ -1,124 +1,79 @@
-import { Router } from 'express';
-import productModel from '../DAO/models/products.model.js';
-import messageModel from '../DAO/models/message.model.js';
-import cartModel from '../DAO/models/carts.model.js';
+import { Router } from "express"
+import { productsService, cartsService } from "../services/index.js"
+import { getFindParameters } from "../middlewares/products.middlewares.js"
+import passport from "passport"
+import { PERSISTENCE } from "../config/config.js"
 
-const router = Router();
+const router = Router()
 
-
-const isLoggedIn = (req,res,next) => {
+const isLoggedIn = (req, res, next) => {
   if (req.cookies.jwtCookie) return res.redirect("/products")
 
- return next()
+  return next()
 }
 
-const justPublicWitoutSession = (req,res,next) => {
-    if (req.session?.user) return res.redirect("/products")
-    
-    return next()
-  }
-  
-  const auth = (req,res,next) => {
-    if (req.cookies.jwtCookie) return next()
-  
-    return res.redirect("/login")
-  }
+const auth = (req, res, next) => {
+  if (req.cookies.jwtCookie) return next()
 
-router.get("/products", auth, async (req, res) => {
+  return res.redirect("/login")
+}
+
+router.get("/products", auth, passport.authenticate("jwt", { session: false }), getFindParameters, async (req, res) => {
   try {
-    const { limit = 10, page = 1, sort = '', category = '', stock = '' } = req.query;
-
-    const filter = {
-      ...(category && { category }),
-      ...(stock && { stock }),
-    };
-
-    let sortOptions = {};
-    if (sort === 'asc') {
-      sortOptions = { price: 1 };
-    } else if (sort === 'desc') {
-      sortOptions = { price: -1 };
-    }
-
-    const options = {
-      limit: parseInt(limit),
-      page: parseInt(page),
-      sort: sortOptions,
-      lean: true,
-    };
-
-    const products = await productModel.paginate(filter, options);
-
-    res.render('products', { products });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+    const result = await productsService.getProducts(req?.queryFindParameters, req?.optionsPaginate)
+    result.user = req.user?.user || {}
+    if (result.status == 400) return res.status(result.status).send(result.message)
+    return res.render("products", result)
   }
-});
-
-router.get('/realTimeProducts', async (req, res) => {
-  try {
-    const allProducts = await productModel.find().lean().exec();
-    res.render('realTimeProducts', { allProducts });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+  catch (e) {
+    console.error(e)
+    return res.status(500).send("Server error")
   }
-});
+})
 
-router.get('/chat', async (req, res) => {
-  try {
-    const messages = await messageModel.find().lean().exec();
-    res.render('chat', { messages });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.get('/product/:pid', async (req, res) => {
+router.get("/products/:pid", passport.authenticate("jwt", { session: false }), async (req, res) => {
   try {
     const { pid } = req.params;
-    const product = await productModel.findById(pid).lean().exec();
-
-    if (!product) {
-      return res.status(404).json({ error: 'The product does not exist' });
-    }
-
-    res.render('product', { product });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+    const product = await productsService.getProductById(pid)
+    if (!product) return res.status(400).send(product)
+    product.user = req.user?.user
+    res.render("product", product)
   }
-});
+  catch (e) {
+    console.error("Error:", e)
+    return res.status(500).send("Server error")
+  }
+})
 
-router.get('/carts/:cid', async (req, res) => {
+router.get("/carts/:cid", async (req, res) => {
   try {
-    const { cid } = req.params;
-    const cart = await cartModel.findById(cid).lean().exec();
-
-    if (!cart || !cart.products || cart.products.length === 0) {
-      const emptyCart = 'Carrito Vacío';
-      req.app.get('socketio').emit('updatedCarts', []);
-      return res.render('carts', { emptyCart });
-    }
-
-    const carts = cart.products;
-    req.app.get('socketio').emit('updatedCarts', carts);
-
-    res.render('carts', { carts });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+    const { cid } = req.params
+    const cart = await cartsService.getCartById(cid)
+    PERSISTENCE == "FILE" && (cart.products = await Promise.all(cart.products.map(async p => {
+      const product = await productsService.getProductById(p.id)
+      return {...p, product}
+    })))
+    
+    res.render("cart", cart)
   }
-});
+  catch (e) {
+    console.error("Error:", e)
+    res.status(500).send("Server error")
+  }
+})
 
-router.get("/login", justPublicWitoutSession, (req,res) => {
-    return res.render("login",{})
-  })
-  
-  router.get("/register", justPublicWitoutSession, (req,res) => {
-    return res.render("register", {})
-  })
+router.get("/", (req, res) => res.redirect("/login"))
 
-export default router;
+router.get("/login", isLoggedIn, (req, res) => {
+  return res.render("login", {})
+})
+
+router.get("/register", isLoggedIn, (req, res) => {
+  return res.render("register", {})
+})
+
+router.get("/chat", (req, res) => {
+  return res.render("chat", {})
+})
+
+export default router
