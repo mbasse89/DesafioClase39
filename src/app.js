@@ -12,6 +12,12 @@ import initializePassport from "./config/passport.config.js"
 import passport from "passport"
 import { Server } from "socket.io"
 import { MONGO_URL, MONGO_DBNAME, PORT } from "./config/config.js"
+import { addLogger, logger } from "./utils/logger.js"
+import errorsMiddleware from "./middlewares/errors.middlewares.js"
+import routerMocking from "./Router/mocking.router.js"
+
+
+
 
 // Configuración de express
 // const PORT = 8080
@@ -32,7 +38,12 @@ app.use(passport.initialize())
 app.use("/api/session", routerSession)
 app.use("/api/products", routerProducts)
 app.use("/api/carts", routerCarts)
+app.use("/api/mocking", routerMocking)
+
 app.use("/", routerViews)
+
+app.use(errorsMiddleware)
+
 
 mongoose.connect(process.env.MONGO_URL, { dbName: process.env.MONGO_DBNAME })
   .then(() => {

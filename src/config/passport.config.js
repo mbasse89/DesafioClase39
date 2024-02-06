@@ -5,6 +5,8 @@ import UserModel from "../DAO/mongo/models/user.models.js"
  import passportJWT from "passport-jwt"
 import { isValidPassword, createHash, jwtSign, generateToken } from "../utils.js"
 import CartModel from "../DAO/mongo/models/carts.model.js"
+import { logger } from "../utils/logger.js"
+
 
 const LocalStrategy = local.Strategy
 const JWTStrategy = passportJWT.Strategy
@@ -17,12 +19,12 @@ const initializePassport = () => {
   }, async (req, username, password, done) => {
     const { first_name, last_name, email, age, role } = req.body
     try {
-      const user = await UserModel.findOne({ email: username })
+      const user = await usersService.getUserByEmail(username)
       if (user) {
-        console.log("User already exists")
+        req.logger.warning("Warning: User already exists")
         return done(null, false)
       }
-      const carts = await CartModel.find()
+      const cart = await cartsService.addCart([])
 
       const newUser = {
         first_name,
@@ -30,11 +32,11 @@ const initializePassport = () => {
         email,
         age,
         role,
-        cart: carts[0]._id,
+        cart: cart?._id || cart?.id || "",
         password: createHash(password)
       }
 
-      const result = await UserModel.create(newUser)
+      const result = await usersService.createUser(newUser)
       return done(null, result)
     }
     catch (e) {
@@ -43,18 +45,20 @@ const initializePassport = () => {
   }))
 
   passport.use("login", new LocalStrategy({
-    usernameField: "email"
-  }, async (username, password, done) => {
+    usernameField: "email",
+    passReqToCallback: true
+
+  }, async (req, username, password, done) => {
     try {
-      const user = await UserModel.findOne({email: username}).lean().exec()
+      const user = await usersService.getUserByEmail(username)
 
       if (!user) {
-        console.log("User doesn't exists")
+        req.logger.warning("User doesn't exists")
         return done(null, false)
       }
 
       if (!isValidPassword(user, password)) {
-        console.log("Incorrect password")
+        req.logger.warning("Incorrect password")
         return done(null, false)
       }
 
@@ -85,7 +89,7 @@ const initializePassport = () => {
           email: profile._json.email,
           age: null,
           password: "",
-          cart: carts[0]._id,
+          cart: cart?._id || cart?.id || "",
           role: profile._json.email == "adminCoder@coder.com" ? "admin" : "user"
         })
       }

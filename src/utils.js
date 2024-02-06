@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 export default __dirname;
+import { faker } from "@faker-js/faker"
+
 
 export const jwtSign = "qwerty";
 
@@ -27,5 +29,19 @@ export const authorization = role => {
     if( user.user.role != role ) return res.status(403).send({error: 'No permisions'})
     return next()
   }
+}
+
+export const generateProduct = () => {
+  return (
+    {
+      title: faker.commerce.productName(),
+      description: faker.commerce.productDescription(),
+      price: faker.commerce.price(),
+      code: faker.string.fromCharacters("abcdefghijklmnopqrstuvwxyz0123456789", 6),
+      stock: faker.number.int({ max: 100 }),
+      category: faker.commerce.category,
+      status: faker.datatype.boolean()
+    }
+  )
 }
 // export const PORT = 8080;
