@@ -1,16 +1,20 @@
 import { cartsService, productsService, ticketsService } from "../services/index.js"
-import nodemailer from "nodemailer"
+// import nodemailer from "nodemailer"
 import moment from "moment"
 import { PERSISTENCE } from "../config/config.js"
+import Mail from "../modules/mail.module.js"
 
-const transport = nodemailer.createTransport({
-  service: "gmail",
-  port: 587,
-  auth: {
-    user: "mbasse33@gmail.com",
-    pass: "fxnvexqggtxqhcxz"
-  }
-})
+const mail = new Mail()
+
+
+// const transport = nodemailer.createTransport({
+//   service: "gmail",
+//   port: 587,
+//   auth: {
+//     user: "mbasse33@gmail.com",
+//     pass: "cjlawbuyeodlhlqf"
+//   }
+// })
 export const getCartById = async (req,res) => {
   try {
     const {cid} = req.params
@@ -115,20 +119,22 @@ export const purchaseCart = async (req, res) => {
       }, 0),
       purchaser: req?.user?.user?.email,
     };
+
+
     const ticketResult = await ticketsService.createTicket(ticket);
 
     const cartUpdateProducts = await cartsService.updateCartProducts(cid, unavailableProducts);
 
-    transport.sendMail({
-      from: "mbasse33@gmail.com",
-      to: req?.user?.user?.email,
-      subject: "Compra realizada",
-      html: "<h1>Realizaste la compra</h1>",
-    });
-    res.json({ status: "success", payload: unavailableProducts.length ? unavailableProducts : ticketResult });
-  } catch (e) {
-    console.error("Error:", e);
-    if (e.name === "CastError") return res.status(404).send("Not found");
-    res.status(500).send("Server error");
+    mail.send(req?.user?.user?.email, "Compra realizada", "<h1>Relisazte la compra</h1>")
+
+
+     res.json({ status: "success", payload: unavailableProducts.length ? unavailableProducts : ticketResult })
   }
-};
+
+
+  catch (e) {
+    req.logger.error("Error: " + e)
+    if (e.name == "CastError") return res.status(404).send("Not found")
+    res.status(500).send("Server error")
+  }
+}
