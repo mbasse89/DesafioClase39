@@ -51,13 +51,13 @@ router.get("/carts/:cid", async (req, res) => {
     const cart = await cartsService.getCartById(cid)
     PERSISTENCE == "FILE" && (cart.products = await Promise.all(cart.products.map(async p => {
       const product = await productsService.getProductById(p.id)
-      return {...p, product}
+      return { ...p, product }
     })))
-    
+
     res.render("cart", cart)
   }
   catch (e) {
-    console.error("Error:", e)
+    req.logger.error("Error: " + e)
     res.status(500).send("Server error")
   }
 })
@@ -74,6 +74,23 @@ router.get("/register", isLoggedIn, (req, res) => {
 
 router.get("/chat", (req, res) => {
   return res.render("chat", {})
+})
+
+router.get("/reset-password", async (req,res) => {
+  try {
+
+    const {token} = req?.query
+    const data = verifyToken(token)
+    
+    const user = usersService.getUserByEmail(data?.email)
+    if (!user) return res.render("password", {valid: true})
+    
+    res.render("password", {...data, valid: true})
+  }
+  catch(e) {
+    const {user: {email}} = verifyToken(req?.query?.token, true)
+    res.render("password", {valid: false, expired: true, email })
+  }
 })
 
 export default router

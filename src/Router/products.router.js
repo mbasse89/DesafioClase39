@@ -10,10 +10,13 @@ router.get("/", getFindParameters, getProducts);
 
 router.get("/:pid", getProductById);
 
-router.post("/", passport.authenticate("jwt", { session: false }), authorization("admin"), addProduct);
+router.post("/", addProduct);
 
-router.put("/:pid", passport.authenticate("jwt", { session: false }), authorization("admin"), updateProduct);
 
-router.delete("/:pid", passport.authenticate("jwt", { session: false }), authorization("admin"), deleteProduct);
+router.post("/", passport.authenticate("jwt", { session: false }), authorization(["admin", "premium"]), addProduct);
+
+router.put("/:pid", passport.authenticate("jwt", { session: false }), authorization(["admin", "premium"]), updateProduct);
+
+router.delete("/:pid", passport.authenticate("jwt", { session: false }), authorization(["admin", "premium"]), deleteProduct);
 
 export default router;

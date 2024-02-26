@@ -1,7 +1,6 @@
 const socket = io()
 
-const cart = '6567aea166d089776449df2a'
-const addCart = async (productId) => {
+ const addCart = async (productId) => {
     try {
         const res = await fetch(`/api/carts/${cart}/product/${productId}`, {
             method: 'POST',

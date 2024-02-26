@@ -7,14 +7,7 @@ import Mail from "../modules/mail.module.js"
 const mail = new Mail()
 
 
-// const transport = nodemailer.createTransport({
-//   service: "gmail",
-//   port: 587,
-//   auth: {
-//     user: "mbasse33@gmail.com",
-//     pass: "cjlawbuyeodlhlqf"
-//   }
-// })
+ 
 export const getCartById = async (req,res) => {
   try {
     const {cid} = req.params
