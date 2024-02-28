@@ -15,6 +15,9 @@ import { MONGO_URL, MONGO_DBNAME, PORT } from "./config/config.js"
 import { addLogger, logger } from "./utils/logger.js"
 import errorsMiddleware from "./middlewares/errors.middlewares.js"
 import routerMocking from "./Router/mocking.router.js"
+import errorsMiddleware from "./middlewares/errors.middlewares.js"
+import swaggerJSDoc from "swagger-jsdoc"
+import SwaggerUiExpress from "swagger-ui-express"
 
 
 
@@ -22,6 +25,24 @@ import routerMocking from "./Router/mocking.router.js"
 // Configuración de express
 // const PORT = 8080
 const app = express();
+
+app.use(addLogger)
+
+const swaggerOptions = {
+  definition: {
+      openapi: "3.0.1",
+      info: {
+          title: 'Coderhouse Ecommerce Documentacion',
+          description: 'Este es un proyecto educativo que sirve como api para un simple ecommerce.'
+      }
+  },
+  apis: [`${__dirname}/docs/**/*.yaml`]
+}
+const specs = swaggerJSDoc(swaggerOptions)
+app.use('/apidocs', SwaggerUiExpress.serve, SwaggerUiExpress.setup(specs))
+
+
+
 app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
